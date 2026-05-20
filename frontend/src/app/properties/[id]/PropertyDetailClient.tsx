@@ -204,9 +204,9 @@ export function PropertyDetailClient({ property }: Props) {
 
             {tab === 'Rəylər' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {property.reviews?.length ? (
+                {(property as any).reviews?.length ? (
                   <div className="space-y-4">
-                    {property.reviews.map((r: any) => (
+                    {(property as any).reviews.map((r: any) => (
                       <div key={r.id} className="card p-5">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-9 h-9 rounded-full bg-brand-gradient flex items-center justify-center text-sm font-bold">
