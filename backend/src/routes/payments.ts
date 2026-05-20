@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import Stripe from 'stripe';
 import { prisma } from '../lib/prisma';
 import { authenticate } from '../middleware/auth';
@@ -58,4 +58,3 @@ paymentsRouter.post('/webhook', express.raw({ type: 'application/json' }), async
   res.json({ received: true });
 });
 
-import express from 'express';
