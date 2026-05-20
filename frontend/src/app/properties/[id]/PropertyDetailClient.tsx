@@ -172,7 +172,7 @@ export function PropertyDetailClient({ property }: Props) {
                     ['Elan Növü', listingLabel[property.listingType] ?? property.listingType],
                     ['Tikinti İli', property.yearBuilt ?? '—'],
                     ['Torpaq Sahəsi', property.lotSize ? `${property.lotSize.toLocaleString()} kv.fut` : '—'],
-                    ['Mərtəbə Sayı', property.floors ?? '—'],
+                    ['Mərtəbə Sayı', '—'],
                     ['Qaraj', property.garage ? `Bəli (${property.garageSpaces} yer)` : 'Xeyr'],
                     ['Hovuz', property.pool ? 'Bəli' : 'Xeyr'],
                     ['HOA Haqqı', property.hoaFee ? formatPrice(property.hoaFee) + '/ay' : 'Yoxdur'],
