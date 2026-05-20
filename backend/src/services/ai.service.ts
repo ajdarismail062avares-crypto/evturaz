@@ -1,7 +1,11 @@
 import OpenAI from 'openai';
 import { prisma } from '../lib/prisma';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI;
+const getOpenAI = () => {
+  if (!openai) openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'placeholder' });
+  return openai;
+};
 
 export async function generatePropertyDescription(data: {
   title: string; bedrooms?: number; bathrooms?: number;
@@ -9,7 +13,7 @@ export async function generatePropertyDescription(data: {
 }) {
   const prompt = `Write a compelling real estate listing description for: ${data.title}, ${data.bedrooms} bed / ${data.bathrooms} bath, ${data.squareFeet} sqft in ${data.city}. Amenities: ${data.amenities.join(', ')}. Keep it under 200 words, luxury tone.`;
 
-  const res = await openai.chat.completions.create({
+  const res = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 300,
@@ -50,7 +54,7 @@ export async function estimatePropertyValue(data: {
 }) {
   const prompt = `Estimate the current market value (in USD) for a property: ${data.bedrooms} bed / ${data.bathrooms} bath, ${data.squareFeet} sqft, built ${data.yearBuilt ?? 'unknown'} in ${data.city}. Return only a JSON object: {"low": number, "mid": number, "high": number}`;
 
-  const res = await openai.chat.completions.create({
+  const res = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 100,
@@ -63,7 +67,7 @@ export async function estimatePropertyValue(data: {
 export async function chatWithAssistant(messages: { role: 'user' | 'assistant'; content: string }[], propertyContext?: string) {
   const systemPrompt = `You are an expert real estate AI assistant for a luxury real estate platform. You help users find, evaluate, and understand properties. ${propertyContext ? `Current property context: ${propertyContext}` : ''} Be concise, professional, and helpful.`;
 
-  const res = await openai.chat.completions.create({
+  const res = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'system', content: systemPrompt }, ...messages],
     max_tokens: 500,
@@ -75,7 +79,7 @@ export async function chatWithAssistant(messages: { role: 'user' | 'assistant'; 
 export async function generateVirtualStagingSuggestions(roomType: string, style: string) {
   const prompt = `Suggest furniture and decor for a ${roomType} in ${style} style. Return JSON array of items: [{"name": string, "description": string, "estimatedCost": number, "placement": string}]. Max 6 items.`;
 
-  const res = await openai.chat.completions.create({
+  const res = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 600,
