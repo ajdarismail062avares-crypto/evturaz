@@ -1,0 +1,311 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  RENTER
+  AGENT
+  ADMIN
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  CONDO
+  COMMERCIAL
+  LAND
+  TOWNHOUSE
+  VILLA
+}
+
+enum ListingType {
+  FOR_SALE
+  FOR_RENT
+  FOR_LEASE
+  AUCTION
+}
+
+enum PropertyStatus {
+  ACTIVE
+  PENDING
+  SOLD
+  RENTED
+  OFF_MARKET
+}
+
+enum TourStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String?
+  firstName        String
+  lastName         String
+  avatar           String?
+  phone            String?
+  role             UserRole  @default(BUYER)
+  isVerified       Boolean   @default(false)
+  isActive         Boolean   @default(true)
+  googleId         String?   @unique
+  stripeCustomerId String?   @unique
+  licenseNumber    String?
+  bio              String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  properties      Property[]      @relation("OwnerProperties")
+  agentProperties Property[]      @relation("AgentProperties")
+  favorites       Favorite[]
+  reviews         Review[]
+  sentMessages    Message[]       @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+  tourSessions    TourSession[]
+  inquiries       Inquiry[]
+  savedSearches   SavedSearch[]
+  notifications   Notification[]
+  payments        Payment[]
+  contracts       Contract[]
+
+  @@map("users")
+}
+
+model Property {
+  id              String         @id @default(uuid())
+  title           String
+  description     String
+  propertyType    PropertyType
+  listingType     ListingType
+  status          PropertyStatus @default(ACTIVE)
+  price           Float
+  pricePerMonth   Float?
+  bedrooms        Int?
+  bathrooms       Float?
+  squareFeet      Float
+  lotSize         Float?
+  yearBuilt       Int?
+  floors          Int?
+  garage          Boolean        @default(false)
+  garageSpaces    Int?
+  pool            Boolean        @default(false)
+  basement        Boolean        @default(false)
+  furnished       Boolean        @default(false)
+  petFriendly     Boolean        @default(false)
+  airConditioning Boolean        @default(false)
+  heating         Boolean        @default(false)
+  washerDryer     Boolean        @default(false)
+
+  address         String
+  city            String
+  state           String
+  zipCode         String
+  country         String         @default("US")
+  latitude        Float
+  longitude       Float
+  neighborhood    String?
+
+  images          String[]
+  videos          String[]
+  floorPlanUrl    String?
+  model3dUrl      String?
+  has3DTour       Boolean        @default(false)
+  tourRoomData    Json?
+
+  mlsNumber       String?        @unique
+  hoaFee          Float?
+  taxRate         Float?
+  estimatedValue  Float?
+  priceHistory    Json?
+
+  viewCount       Int            @default(0)
+  favoriteCount   Int            @default(0)
+  featuredUntil   DateTime?
+  isFeatured      Boolean        @default(false)
+
+  ownerId         String
+  agentId         String?
+  owner           User           @relation("OwnerProperties", fields: [ownerId], references: [id])
+  agent           User?          @relation("AgentProperties", fields: [agentId], references: [id])
+
+  favorites       Favorite[]
+  reviews         Review[]
+  tourSessions    TourSession[]
+  inquiries       Inquiry[]
+  amenities       PropertyAmenity[]
+  payments        Payment[]
+  contracts       Contract[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([latitude, longitude])
+  @@index([city, state])
+  @@index([price])
+  @@index([status, listingType])
+  @@map("properties")
+}
+
+model PropertyAmenity {
+  id         String   @id @default(uuid())
+  propertyId String
+  name       String
+  category   String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_amenities")
+}
+
+model TourSession {
+  id          String      @id @default(uuid())
+  propertyId  String
+  hostId      String
+  status      TourStatus  @default(SCHEDULED)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  roomCode    String      @unique @default(uuid())
+  isMultiplayer Boolean   @default(false)
+  participants Json?
+  recording   String?
+  heatmapData Json?
+
+  property    Property    @relation(fields: [propertyId], references: [id])
+  host        User        @relation(fields: [hostId], references: [id])
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("tour_sessions")
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@map("favorites")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  rating     Int
+  title      String?
+  body       String
+  user       User     @relation(fields: [userId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  content     String
+  isRead      Boolean  @default(false)
+  attachments String[]
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("messages")
+}
+
+model Inquiry {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  message    String
+  phone      String?
+  email      String
+  isRead     Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@map("inquiries")
+}
+
+model SavedSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  filters   Json
+  alertFreq String   @default("daily")
+  isActive  Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("saved_searches")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  isRead    Boolean  @default(false)
+  data      Json?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Payment {
+  id              String   @id @default(uuid())
+  userId          String
+  propertyId      String?
+  stripePaymentId String   @unique
+  amount          Float
+  currency        String   @default("USD")
+  status          String
+  type            String
+  metadata        Json?
+  user            User     @relation(fields: [userId], references: [id])
+  property        Property? @relation(fields: [propertyId], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@map("payments")
+}
+
+model Contract {
+  id          String   @id @default(uuid())
+  propertyId  String
+  buyerId     String
+  sellerId    String
+  type        String
+  status      String   @default("DRAFT")
+  content     String
+  signedAt    DateTime?
+  buyerSigned Boolean  @default(false)
+  sellerSigned Boolean @default(false)
+  price       Float
+  closingDate DateTime?
+  property    Property @relation(fields: [propertyId], references: [id])
+  buyer       User     @relation(fields: [buyerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("contracts")
+}
